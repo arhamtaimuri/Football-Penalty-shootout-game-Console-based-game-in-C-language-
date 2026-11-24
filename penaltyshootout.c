@@ -85,6 +85,26 @@ void clearInputBuffer(){     // this function is used for clearing like when the
 
 void printbanner(){       //remaining
     printf("=========PENALTY SHOOTOUT GAME=============");
+    printf("\n");
+    printf("  ==================================================\n");
+    printf("  ||                                              ||\n");
+    printf("  ||        PENALTY  SHOOTOUT  GAME               ||\n");
+    printf("  ||                                              ||\n");
+    printf("  ==================================================\n");
+    printf("\n");
+    printf("      +-----------------------------------------+\n");
+    printf("      |  #  #  #  #  #  #  #  #  #  #  #  #  # |\n");
+    printf("      |  #  #  #  #  #  #  #  #  #  #  #  #  # |\n");
+    printf("      |  #  #  #  #  #  #  #  #  #  #  #  #  # |\n");
+    printf("      |  #  #  #  #  #  #  #  #  #  #  #  #  # |\n");
+    printf("      |  #  #  #  #  #  #  #  #  #  #  #  #  # |\n");
+    printf("      +--+-------------------------------------+-+\n");
+    printf("      LEFT              CENTER              RIGHT\n");
+    printf("\n");
+    printf("                        (  O  )\n");
+     printf("                       ~ ball ~\n");
+    printf("\n");
+
 
 }
 
@@ -104,11 +124,11 @@ int getValidINT(int min, int max){
     int input;
     int result;
 
-    result = scanf("%d", &input);
+    result = scanf("\n%d", &input);
     clearInputBuffer();
     while (result != 1 || input < min || input > max) {
         printf("\nINVALID INPUT. ENTER A NUMBER BETWEEN %d and %d ", min, max);
-        result = scanf("%d", &input);
+        result = scanf(" \n%d ", &input);
         clearInputBuffer();
     }
     return input;
@@ -170,6 +190,7 @@ int getPlayerDirection(){
     printf("\n1.Left");
     printf("\n2.Center");
     printf("\n3.Right");
+     printf("\n");
    int directions=getValidINT(1, 3);
    directions=directions-1;
 
@@ -186,16 +207,6 @@ int chooseDifficulty(){
     return difficulty_type;
 
 }
-//module C:
-
-//module D:
-
-//module E:
-
-
-
-//stats.accuracy = calculateAccuracy(&stats); write this after match ends
-
 //module F: 
 
 void initStats( MatchStats *stats){
@@ -205,6 +216,7 @@ void initStats( MatchStats *stats){
      stats->saves=0;
      stats->shotstaken=0;
 }
+
 
 void shooterFunction(MatchStats *stats, shotresults shotresult){
     stats->shotstaken++;
@@ -267,6 +279,266 @@ void updatePlayerProfile(Player *player,MatchStats stats,MatchRecord *won){
 
 }
 
+
+//file handling function: 
+
+void appendMatchHistory(MatchRecord record){
+    FILE *fp;
+
+    fp=fopen("history.txt","a");
+    if(fp==NULL){
+        return;
+    }
+    else{
+      fprintf(fp,"%s,%d,%d,%d,%d,%d\n",record.playername,record.difficulty,record.mode,record.yourScore,record.computerScore,record.result);
+      }
+
+    fclose(fp);
+}
+
+
+//module C: core game logic
+int getCpuShotDirection(int difficulty){
+    return rand()%3;                      // CPU shooter picks any side
+}
+
+shotresults resolveShot(int shot, int dive){
+    if(rand()%100<10){                    // 10% chance the shot goes off target
+        return MISSED;
+    }
+    if(shot==dive){
+        return SAVED;
+    }
+    return GOAL;
+}
+
+void displayShotResult(shotresults result){
+    if(result==GOAL)       printf("\nGOAL!");
+    else if(result==SAVED) printf("\nSAVED!");
+    else                   printf("\nMISSED! Wide of the goal.");
+}
+
+void updateTracker(ShotTracker *tracker, int direction){
+    tracker->count[direction]++;
+}
+
+//module D: difficulty behaviour
+int getMostUsedDirection(ShotTracker *tracker){
+    int best=0;
+    for(int i=1;i<3;i++){
+        if(tracker->count[i]>tracker->count[best]){
+            best=i;
+        }
+    }
+    return best;
+}
+
+int weightedPick(int favoured, int percent){   // favoured side chosen 'percent'% of the time
+    if(rand()%100<percent){
+        return favoured;
+    }
+    return rand()%3;
+}
+
+int getKeeperDirection(difficulty_lvl difficulty, ShotTracker *tracker, int lastDirection){
+    if(difficulty==EASY){
+        return rand()%3;
+    }
+    else if(difficulty==MEDIUM){
+        if(lastDirection==-1 || rand()%2==0){   // no history yet, or the random half
+            return rand()%3;
+        }
+        return lastDirection;
+    }
+    else{
+        return weightedPick(getMostUsedDirection(tracker),60);
+    }
+}
+
+//module E: game modes
+int checkMatchOver(int scoreA, int scoreB, int kicksLeftA, int kicksLeftB){
+    if(scoreA>scoreB+kicksLeftB) return 1;    // B can no longer catch up
+    if(scoreB>scoreA+kicksLeftA) return 1;
+    return 0;
+}
+
+void displayScoreboard(int yourScore, int cpuScore, int yourLeft, int cpuLeft){
+    printf("\n---- SCOREBOARD ----");
+    printf("\nYou: %d (kicks left %d)   CPU: %d (kicks left %d)\n",yourScore,yourLeft,cpuScore,cpuLeft);
+}
+
+void playSuddenDeath(int *yourScore, int *cpuScore, difficulty_lvl difficulty, ShotTracker *tracker, int *last, MatchStats *stats){
+    printf("\n*** SUDDEN DEATH ***");
+    int yourGoal, cpuGoal;
+    do{
+        yourGoal=0;
+        cpuGoal=0;
+
+        int shot=getPlayerDirection();
+        int dive=getKeeperDirection(difficulty,tracker,*last);
+        shotresults r=resolveShot(shot,dive);
+        displayShotResult(r);
+        shooterFunction(stats,r);
+        updateTracker(tracker,shot);
+        *last=shot;
+        if(r==GOAL){ yourGoal=1; (*yourScore)++; }
+
+        printf("\nCPU is about to shoot. Pick where to dive.");
+        int cpuShot=getCpuShotDirection(difficulty);
+        dive=getPlayerDirection();
+        r=resolveShot(cpuShot,dive);
+        displayShotResult(r);
+        keeperFunction(stats,r);
+        if(r==GOAL){ cpuGoal=1; (*cpuScore)++; }
+
+    }while(yourGoal==cpuGoal);               // repeat until one side scores and the other doesn't
+}
+
+int playShootout(Player *player, difficulty_lvl difficulty){
+    MatchStats stats;
+    ShotTracker tracker={{0,0,0}};
+    MatchRecord record;
+    int yourScore=0, cpuScore=0;
+    int yourLeft=KICKS_PER_TEAM, cpuLeft=KICKS_PER_TEAM;
+    int last=-1;
+
+    initStats(&stats);
+     printf("\nEnter difficulty you want to play:    ");
+      
+      difficulty=chooseDifficulty();
+
+    for(int round=1; round<=KICKS_PER_TEAM && !checkMatchOver(yourScore,cpuScore,yourLeft,cpuLeft); round++){
+        printf("\n\n--- Round %d ---\nYou shoot." ,round);
+        int shot=getPlayerDirection();
+        int dive=getKeeperDirection(difficulty,&tracker,last);
+        shotresults r=resolveShot(shot,dive);
+        displayShotResult(r);
+        shooterFunction(&stats,r);
+        updateTracker(&tracker,shot);
+        last=shot;
+        if(r==GOAL) yourScore++;
+        yourLeft--;
+
+        if(checkMatchOver(yourScore,cpuScore,yourLeft,cpuLeft)) break;
+
+        printf("\nCPU shoots. Pick where to dive.");
+        int cpuShot=getCpuShotDirection(difficulty);
+        dive=getPlayerDirection();
+        r=resolveShot(cpuShot,dive);
+        displayShotResult(r);
+        keeperFunction(&stats,r);
+        if(r==GOAL) cpuScore++;
+        cpuLeft--;
+
+        displayScoreboard(yourScore,cpuScore,yourLeft,cpuLeft);
+    }
+
+    if(yourScore==cpuScore){
+        playSuddenDeath(&yourScore,&cpuScore,difficulty,&tracker,&last,&stats);
+    }
+
+    stats.accuracy=calculateAccuracy(&stats);
+    displayMATCHSUMMARY(stats);
+
+    strcpy(record.playername,player->name);
+    record.difficulty=difficulty;
+    record.mode=1;
+    record.yourScore=yourScore;
+    record.computerScore=cpuScore;
+    record.result=(yourScore>cpuScore);
+    printf("\nFINAL: You %d - %d CPU  ->  %s",yourScore,cpuScore,record.result?"YOU WIN!":"YOU LOSE");
+
+    updatePlayerProfile(player,stats,&record);
+    appendMatchHistory(record);
+    return record.result;
+}
+
+int playGoalkeeperMode(Player *player, difficulty_lvl difficulty){
+    MatchStats stats;
+    MatchRecord record;
+    int conceded=0;
+
+    initStats(&stats);
+     printf("\nEnter difficulty you want to play:    ");
+      
+      difficulty=chooseDifficulty();
+    for(int i=1;i<=KICKS_PER_TEAM;i++){
+        printf("\n\n--- Kick %d of %d --- CPU shoots, you dive.",i,KICKS_PER_TEAM);
+        int cpuShot=getCpuShotDirection(difficulty);
+        int dive=getPlayerDirection();
+        shotresults r=resolveShot(cpuShot,dive);
+        displayShotResult(r);
+        keeperFunction(&stats,r);
+        if(r==GOAL) conceded++;
+    }
+
+    strcpy(record.playername,player->name);
+    record.difficulty=difficulty;
+    record.mode=2;
+    record.yourScore=stats.saves;        // in keeper mode your score = saves
+    record.computerScore=conceded;
+    record.result=(stats.saves>conceded);
+
+    printf("\nSaves: %d  Goals conceded: %d  ->  %s",stats.saves,conceded,record.result?"YOU WIN!":"YOU LOSE");
+    updatePlayerProfile(player,stats,&record);
+    appendMatchHistory(record);
+    return record.result;
+}
+
+void practicemode(){
+ 
+     MatchStats stats;
+    ShotTracker tracker={{0,0,0}};
+    int last=-1;
+    int continuee=0;
+    int mode;
+
+    initStats(&stats);
+    printf("\nEnter mode you want to play:    ");
+     printf("\n1.Shoot the penalty:    ");
+      printf("\n2.Save the penalty:    ");
+     mode=getValidINT(1,2);
+     
+     printf("\nEnter difficulty you want to play:    ");
+      
+     int difficulty=chooseDifficulty();
+int round=1;
+     do
+     {
+        if(mode==1){
+             printf("\n\n--- Round %d ---\nYou shoot.",round);
+         round++;
+        
+        int shot=getPlayerDirection();
+      int dive=getKeeperDirection(difficulty,&tracker,last);
+        shotresults r=resolveShot(shot,dive);
+        displayShotResult(r);
+        shooterFunction(&stats,r);
+        updateTracker(&tracker,shot);
+        last=shot;
+        }
+        else if(mode==2){
+              int cpuShot=getCpuShotDirection(difficulty);
+     int  dive=getPlayerDirection();
+       shotresults r=resolveShot(cpuShot,dive);
+        displayShotResult(r);
+        keeperFunction(&stats,r);
+       
+        }
+        printf("\nDo you want to continue? ");
+        printf("\n1.Continue");
+        printf("\n2.Back to Menu ");
+        continuee=getValidINT(1,2);
+       
+
+     } while (continuee==1);
+     
+     stats.accuracy = calculateAccuracy(&stats);
+        displayMATCHSUMMARY(stats);
+}
+
+
+
 //module G:
 void saveplayers(Player players[], int playercount){
   FILE *fp;
@@ -317,19 +589,7 @@ void loadPlayers(Player players[], int *playercount){
 
 }
 
-void appendMatchHistory(MatchRecord record){
-    FILE *fp;
 
-    fp=fopen("history.txt","a");
-    if(fp==NULL){
-        return;
-    }
-    else{
-      fprintf(fp,"%s,%d,%d,%d,%d,%d\n",record.playername,record.difficulty,record.mode,record.yourScore,record.computerScore,record.result);
-      }
-
-    fclose(fp);
-}
 
 void view_match_history(){
     MatchRecord record;
@@ -409,6 +669,7 @@ int main(){
     int choice;
     Player player[MAX_PLAYER];
    char name[MAX_NAME];
+   difficulty_lvl difficulty;
    loadPlayers(player, &playercount);   //load all players
    getplayername(name);
     int current_index=findPlayer(player,playercount,name);    //current index is the slot for player name like 0 for player1 , 1 for player2 etc
@@ -432,13 +693,21 @@ int main(){
  display_main_menu();
    choice=getMenuChoice();
    //if ocndition for choice==1
+   if(choice==1){
+    playShootout(player,difficulty);
+   }
 
-   //if condition for choice==2
+  else if(choice==2){
+    playGoalkeeperMode(player,difficulty);
+   }
 
-   //if condition for choice==3
+  else if(choice==3){
+    practicemode();
+
+   }
 
 
- if(choice==4){
+else if(choice==4){
     displayLeaderboard(player,playercount);
  }
  else if(choice==5){
