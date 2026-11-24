@@ -83,7 +83,7 @@ void clearInputBuffer(){     // this function is used for clearing like when the
 }
 
 
-void printbanner(){       //remaining
+void printbanner(){       
     printf("=========PENALTY SHOOTOUT GAME=============");
     printf("\n");
     printf("  ==================================================\n");
