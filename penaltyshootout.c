@@ -1,11 +1,14 @@
+
 #include<stdio.h>
 #include<stdlib.h>
 #include<time.h>
 #include<string.h>
 #include<ctype.h>
 
-#define MAX_NAME 30
-#define MAX_PLAYER 50
+//All constants value
+
+#define MAX_NAME 30    
+#define MAX_PLAYER 50  
 #define MAX_HISTORY 100
 #define KICKS_PER_TEAM 5
 
@@ -66,7 +69,13 @@ typedef struct ShotTracker{
     int count[3];
 }ShotTracker;
 
+
+
+
+
+
 //All functions:  
+
 
 void clearscreen(){
     #ifdef _WIN32
@@ -83,7 +92,7 @@ void clearInputBuffer(){     // this function is used for clearing like when the
 }
 
 
-void printbanner(){       
+void print_banner_(){       
     printf("=========PENALTY SHOOTOUT GAME=============");
     printf("\n");
     printf("  ==================================================\n");
@@ -102,7 +111,7 @@ void printbanner(){
     printf("      LEFT              CENTER              RIGHT\n");
     printf("\n");
     printf("                        (  O  )\n");
-     printf("                       ~ ball ~\n");
+     printf("                       = ball =\n");
     printf("\n");
 
 
@@ -111,7 +120,7 @@ void printbanner(){
 void display_main_menu(){       //this is the menu , i have called it in main
 
     clearscreen();
-    printbanner();
+    print_banner_();
     printf("\n1.Play Shootout");
     printf("\n2.Goal Keeper mode");
     printf("\n3.Practice Mode");
@@ -134,7 +143,7 @@ int getValidINT(int min, int max){
     return input;
 }
 
-int getMenuChoice(){        //it will ask the user to input form the menu
+int getMenuChoice(){        //it will ask the user to input fromm the menu
     printf("\nEnter choice(1-6):  ");
     int result=getValidINT(1,6);
 
@@ -143,7 +152,7 @@ int getMenuChoice(){        //it will ask the user to input form the menu
 
 
 
-void pausescreen(){
+void pauses_screen(){   //for clearing the screen 
     printf("\nPress ENTER to continue ");
     clearInputBuffer();
 }
@@ -197,7 +206,7 @@ int getPlayerDirection(){
    return directions;
 }
 
-int chooseDifficulty(){
+int choose_difficulty_(){
     printf("\nChoose difficulty level:  ");
     printf("\n1.Easy");
     printf("\n2.Medium");
@@ -356,7 +365,7 @@ int getKeeperDirection(difficulty_lvl difficulty, ShotTracker *tracker, int last
 }
 
 //module E: game modes
-int checkMatchOver(int scoreA, int scoreB, int kicksLeftA, int kicksLeftB){
+int check_MatchOver(int scoreA, int scoreB, int kicksLeftA, int kicksLeftB){
     if(scoreA>scoreB+kicksLeftB) return 1;    // B can no longer catch up
     if(scoreB>scoreA+kicksLeftA) return 1;
     return 0;
@@ -405,9 +414,9 @@ int playShootout(Player *player, difficulty_lvl difficulty){
     initStats(&stats);
      printf("\nEnter difficulty you want to play:    ");
       
-      difficulty=chooseDifficulty();
+      difficulty=choose_difficulty_();
 
-    for(int round=1; round<=KICKS_PER_TEAM && !checkMatchOver(yourScore,cpuScore,yourLeft,cpuLeft); round++){
+    for(int round=1; round<=KICKS_PER_TEAM && !check_MatchOver(yourScore,cpuScore,yourLeft,cpuLeft); round++){
         printf("\n\n--- Round %d ---\nYou shoot." ,round);
         int shot=getPlayerDirection();
         int dive=getKeeperDirection(difficulty,&tracker,last);
@@ -419,7 +428,7 @@ int playShootout(Player *player, difficulty_lvl difficulty){
         if(r==GOAL) yourScore++;
         yourLeft--;
 
-        if(checkMatchOver(yourScore,cpuScore,yourLeft,cpuLeft)) break;
+        if(check_MatchOver(yourScore,cpuScore,yourLeft,cpuLeft)) break;
 
         printf("\nCPU shoots. Pick where to dive.");
         int cpuShot=getCpuShotDirection(difficulty);
@@ -460,8 +469,8 @@ int playGoalkeeperMode(Player *player, difficulty_lvl difficulty){
 
     initStats(&stats);
      printf("\nEnter difficulty you want to play:    ");
-      
-      difficulty=chooseDifficulty();
+    
+      difficulty=choose_difficulty_();
     for(int i=1;i<=KICKS_PER_TEAM;i++){
         printf("\n\n--- Kick %d of %d --- CPU shoots, you dive.",i,KICKS_PER_TEAM);
         int cpuShot=getCpuShotDirection(difficulty);
@@ -485,7 +494,7 @@ int playGoalkeeperMode(Player *player, difficulty_lvl difficulty){
     return record.result;
 }
 
-void practicemode(){
+void ___practicemode(){
  
      MatchStats stats;
     ShotTracker tracker={{0,0,0}};
@@ -501,7 +510,7 @@ void practicemode(){
      
      printf("\nEnter difficulty you want to play:    ");
       
-     int difficulty=chooseDifficulty();
+     int difficulty=choose_difficulty_();
 int round=1;
      do
      {
@@ -598,7 +607,7 @@ void view_match_history(){
 
     if(fp==NULL){
         printf("NO MATCHES YET! ");
-          pausescreen();
+          pauses_screen();
         return;
     }
     else{
@@ -616,7 +625,7 @@ void view_match_history(){
         }
     }
     fclose(fp);
-     pausescreen();
+    pauses_screen();
 }
 
 void sortLeaderboard(Player players[], int playercount){         //this function uses the bubblesort
@@ -641,7 +650,7 @@ void displayLeaderboard(Player players[], int playercount){        //previous fu
 
      if(playercount==0){
         printf("NO PLAYERS YET! ");
-        pausescreen();
+        pauses_screen();
         return;
     }
     else{
@@ -659,17 +668,21 @@ void displayLeaderboard(Player players[], int playercount){        //previous fu
             printf("%-6d%-20s%-10d%-6d%-8d%-8d%-8d%-10.2f\n",i+1,copy[i].name,copy[i].matches_played,copy[i].wins,copy[i].losses,copy[i].totalgoals,copy[i].totalsaves,copy[i].best_accuracy);
         }
 
-        pausescreen();
+       pauses_screen();
     }
 }
 
 int main(){
+
+
      srand(time(NULL));
     int playercount=0;
     int choice;
     Player player[MAX_PLAYER];
    char name[MAX_NAME];
    difficulty_lvl difficulty;
+
+
    loadPlayers(player, &playercount);   //load all players
    getplayername(name);
     int current_index=findPlayer(player,playercount,name);    //current index is the slot for player name like 0 for player1 , 1 for player2 etc
@@ -689,20 +702,21 @@ int main(){
        
     }
 
+//menu starts: 
+
     do{
  display_main_menu();
    choice=getMenuChoice();
-   //if ocndition for choice==1
    if(choice==1){
-    playShootout(player,difficulty);
+    playShootout(&player[current_index],difficulty);
    }
 
   else if(choice==2){
-    playGoalkeeperMode(player,difficulty);
+    playGoalkeeperMode(&player[current_index],difficulty);
    }
 
   else if(choice==3){
-    practicemode();
+   ___practicemode();
 
    }
 
@@ -713,15 +727,19 @@ else if(choice==4){
  else if(choice==5){
     view_match_history();
  }
-pausescreen();
+pauses_screen();
 
  }
-    while(choice!=6);
+    while(choice!=6);  //Menu loop ends
 
 
-    //Menu loop ends
+   
 
   saveplayers(player,playercount);  //immediately save the player as a profile is created
 
+
+
+
+  return 0;
 
 }
