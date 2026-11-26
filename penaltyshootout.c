@@ -51,6 +51,7 @@ typedef struct MatchStats{
    int saves;
    int misses;
    int shotstaken;
+   int shotsfaced;
    float accuracy;
 
 }MatchStats; 
@@ -133,7 +134,7 @@ int getValidINT(int min, int max){
     int input;
     int result;
 
-    result = scanf("\n%d", &input);
+    result = scanf("%d", &input);
     clearInputBuffer();
     while (result != 1 || input < min || input > max) {
         printf("\nINVALID INPUT. ENTER A NUMBER BETWEEN %d and %d ", min, max);
@@ -224,6 +225,7 @@ void initStats( MatchStats *stats){
      stats->misses=0;
      stats->saves=0;
      stats->shotstaken=0;
+     stats->shotsfaced=0;
 }
 
 
@@ -240,7 +242,7 @@ void shooterFunction(MatchStats *stats, shotresults shotresult){
 }
 
 void keeperFunction(MatchStats *stats, shotresults shotresult){
-  
+  stats->shotsfaced++;
     if(shotresult==SAVED){
         stats->saves++;
 
@@ -266,6 +268,16 @@ void displayMATCHSUMMARY(MatchStats stats){
      printf("\nShots Taken:   %d",stats.shotstaken);
      printf("\nGOALS Missed:   %d",stats.misses);
      printf("\nYour Accuracy:   %.2f",stats.accuracy);
+    
+     printf("\nYou can maximize your SCORE! Hit Play again");
+
+}
+
+void displayKeeper_MatchSummary(MatchStats stats){
+
+  printf("\n================KEEPER MATCH-SUMMARY================");
+     printf("\nGOALS Saved:   %d",stats.saves);
+     printf("\nShots Faced:   %d",stats.shotsfaced);
     
      printf("\nYou can maximize your SCORE! Hit Play again");
 
@@ -542,8 +554,14 @@ int round=1;
 
      } while (continuee==1);
      
-     stats.accuracy = calculateAccuracy(&stats);
-        displayMATCHSUMMARY(stats);
+     if(mode==1){
+        stats.accuracy = calculateAccuracy(&stats);
+       displayMATCHSUMMARY(stats);
+     }
+     else{
+        displayKeeper_MatchSummary(stats);
+     }
+     
 }
 
 
